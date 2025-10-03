@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 from pathlib import Path
 import json
@@ -29,7 +28,7 @@ def main():
     # Holdout split for visuals
     X_tr, X_te, y_tr, y_te = train_test_split(X, y_log, test_size=0.2, random_state=42)
 
-    # Load trained pipeline (fallback: quick RF fit for the report if missing)
+    # Load trained pipeline (fallback: quick RF fit if missing)
     pipe_path = MODELS / 'pipeline.joblib'
     if pipe_path.exists():
         pipe = joblib.load(pipe_path)
@@ -82,7 +81,7 @@ def main():
     if mfile.exists():
         cv_metrics = json.load(open(mfile))
 
-    # Write English report
+    # Write EN report
     REPORTS.mkdir(exist_ok=True)
     with open(REPORTS / 'report.md', 'w', encoding='utf-8') as f:
         f.write('# Ames Housing — Report\n\n')
@@ -106,7 +105,7 @@ def main():
         f.write('- Hyperparameter tuning (RF/XGB), richer geo-features.\n')
         f.write('- SHAP for local explanations.\n')
 
-    print('Report generated at reports/report.md; figures saved to reports/figures/.')
-
+    print('Report generated at reports/report.md; figures saved to reports/figures/.\n(English version)')
 if __name__ == '__main__':
     main()
+

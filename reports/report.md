@@ -1,33 +1,32 @@
-# Прогноз цен на жильё (Ames) — Отчёт
+# Ames Housing — Report
 
-## Цель
-Предсказать `SalePrice` по признакам объекта; бизнес-ценность — оценка стоимости, ценообразование, анализ драйверов цены.
+## Objective
+Predict `SalePrice` from tabular features; business value: pricing and valuation support.
 
-## Метод
-Пайплайн: импьютация → OHE → гео-фичи (Neighborhood) → модель (RF/XGB). Целевая — `log1p(SalePrice)`. Валидация — 5-fold Stratified K-Fold по квантилям.
+## Method
+Single sklearn pipeline: imputation → OHE → neighborhood geo-features (no leakage) → model (RF/XGB). Target: log1p(SalePrice). Validation: 5-fold Stratified K-Fold on log-target quantiles.
 
-## Результаты кросс-валидации
-CV RMSE (лог-цена): **0.1400** ± 0.0102
+## Cross-validation
+CV RMSE (log-target): **0.1400** ± 0.0102
 
-## Holdout-метрика
-RMSE (лог-цена) на валидации: **0.0506**
+## Holdout metric
+RMSE (log-target) on a 20% split: **0.0506**
 
-## Важность признаков (Permutation Importance)
-Топ-20 признаков по важности на holdout.
+## Feature importance
+Top-20 permutation importance on the holdout split.
 
 ![Permutation Importance](figures/perm_importance.png)
 
-## Ошибка по сегментам (Neighborhood)
-RMSE по топ-10 районам (по числу объектов).
+## Segment errors
+RMSE by Neighborhood (top-10 by count).
 
 ![RMSE by Neighborhood](figures/rmse_by_neighborhood.png)
 
-## Выводы
-- Гео-фичи по району улучшают стабильность и точность.
-- Самые сильные драйверы цены: общая жилая площадь, качество отделки, возраст дома/ремонта (проверено Permutation Importance).
-- На дорогих объектах модель переобучается слабее при лог-таргете, ошибки равномернее распределены.
+## Conclusions
+- Neighborhood geo-features improve stability and accuracy.
+- Main price drivers: total living area, overall quality, house/remodel age.
+- Log-target reduces error skew on expensive properties.
 
-## Улучшения
-- Тюнинг гиперпараметров RF/XGB (RandomizedSearch/Optuna).
-- Более точные геопризнаки (квантили по району, расстояние до центра/школ).
-- SHAP для локальных объяснений.
+## Next steps
+- Hyperparameter tuning (RF/XGB), richer geo-features.
+- SHAP for local explanations.
