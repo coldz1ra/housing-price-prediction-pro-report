@@ -1,50 +1,28 @@
+# Ames Housing: Price Prediction (PRO)
 
-# Housing Price Prediction (Ames) — PRO + Report
+Reproducible pipeline for the Ames dataset. Single `sklearn.Pipeline` (imputation + OHE), leak-safe neighborhood geo-features via a custom transformer, and **Stratified K-Fold** on log-price quantiles. Includes a report, model comparison, quick RF tuning, and a Streamlit demo.
 
-**Что внутри:**
-- Стратифицированная K-Fold валидация по квантилям цены.
-- Безопасные гео-фичи по `Neighborhood` (без утечек) через кастомный трансформер.
-- Базовая модель RF (опционально XGBoost при наличии).
-- Скрипты сравнения моделей и быстрого тюнинга RF.
-- **Готовый генератор отчёта**: метрики, важность признаков, ошибки по районам, графики.
+## Results
+- **CV RMSE (log-target, Stratified K-Fold): `0.1400 ± 0.0102`**  
+  **Folds:** `0.1290, 0.1353, 0.1316, 0.1488, 0.1552`
+- **Public Kaggle LB:** **`0.14392`** (from `submission.csv`)
+- **Top drivers (Permutation Importance):** `TotalSF`, `OverallQual`, `Neighborhood`, `GrLivArea`, `AgeAtSale`
 
-## Как запустить
+## Data
+- Kaggle — *House Prices: Advanced Regression Techniques* (1,460 rows, ~80 features)  
+- Target: `SalePrice`, modeled as `log1p(SalePrice)`
+
+## Method
+- Preprocess: numeric → median impute; categorical → most_frequent + OHE.
+- **Geo features (no leakage):** `NeighborhoodStatsTransformer` → `[Nbhd_LogPrice_Mean, Nbhd_LogPrice_Median, Nbhd_Count]` fitted only on each fold’s train split.
+- Validation: 5-fold **Stratified K-Fold** on log-target quantiles.
+- Models: RandomForest (baseline + tuning), optional XGBoost.
+
+## Repro
 ```bash
-# 0) Данные
-#   data/raw/train.csv
-#   data/raw/test.csv
-
-# 1) Окружение
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# 2) Обучение (стратифицированный CV, RF)
+python3 -m venv .venv && source .venv/bin/activate
+pip install -U pip -r requirements.txt
 python -m src.train_pro --model rf --cv stratified
-
-# 3) Предсказания (submission.csv)
 python -m src.predict
-
-# 4) Сравнение моделей
-python -m src.evaluate_models
-
-# 5) Тюнинг RF (быстрый)
-python -m src.tune_rf
-
-# 6) Сгенерировать отчёт (графики + report.md)
 python -m scripts.make_report
-```
 
-## Что появится
-- `models/pipeline.joblib`, `models/metrics.json`
-- `submission.csv`
-- `reports/report.md` + графики в `reports/figures/`
-
-## Результаты
-- CV RMSE (лог-цена, Stratified K-Fold): 0.1400 ± 0.0102
-folds: 0.1290, 0.1353, 0.1316, 0.1488, 0.1552
-- Public Kaggle LB: **0.14392** (сабмит из `submission.csv`)
-- Топ драйверов (perm. importance): TotalSF, OverallQual, Neighborhood, GrLivArea, AgeAtSale
-
-'cv_rmse_mean': 0.13999415566821696
