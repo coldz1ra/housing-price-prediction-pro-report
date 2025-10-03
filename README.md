@@ -2,6 +2,8 @@
 
 # Ames Housing: Price Prediction (PRO)
 
+![CI](https://github.com/coldz1ra/housing-price-prediction-pro-report/actions/workflows/ci.yml/badge.svg)
+
 Reproducible pipeline for the Ames dataset. Single `sklearn.Pipeline` (imputation + OHE), leak-safe neighborhood geo-features via a custom transformer, and **Stratified K-Fold** on log-price quantiles. Includes a report, model comparison, quick RF tuning, and a Streamlit demo.
 
 ## Results
