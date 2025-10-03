@@ -26,7 +26,7 @@ def main():
     X = train[cols].copy()
     y_log = np.log1p(train['SalePrice'].astype(float).values)
 
-    # Train/val split for analysis visuals
+    # Holdout split for visuals
     X_tr, X_te, y_tr, y_te = train_test_split(X, y_log, test_size=0.2, random_state=42)
 
     # Load trained pipeline (fallback: quick RF fit for the report if missing)
@@ -34,7 +34,6 @@ def main():
     if pipe_path.exists():
         pipe = joblib.load(pipe_path)
     else:
-        from src.modeling_pro import build_preprocessor, build_model
         num = [c for c in cols if c in SAFE_NUM_FEATURES + ['TotalSF','AgeAtSale','RemodAgeAtSale','TotalBath','HasGarage','HasFireplace','RoomsPer100m2','IsRemodeled','LotAreaLog']]
         cat = [c for c in cols if c in SAFE_CAT_FEATURES]
         pre = build_preprocessor(num, cat, add_geo=True, nbhd_col='Neighborhood')
@@ -64,10 +63,11 @@ def main():
     te = X_te.copy()
     te['y_true'] = y_te
     te['y_pred'] = preds
-    seg = te.groupby('Neighborhood').agg(count=('Neighborhood','count'),
-                                        rmse=('y_true', lambda s: float(np.sqrt(np.mean((s - te.loc[s.index, 'y_pred'])**2)))))
-    seg = seg.sort_values('count', ascending=False).head(10)
-    # Bar plot
+    seg = te.groupby('Neighborhood').agg(
+        count=('Neighborhood','count'),
+        rmse=('y_true', lambda s: float(np.sqrt(np.mean((s - te.loc[s.index, 'y_pred'])**2))))
+    ).sort_values('count', ascending=False).head(10)
+
     plt.figure(figsize=(7,4))
     plt.bar(seg.index.astype(str), seg['rmse'])
     plt.xticks(rotation=45, ha='right')
@@ -82,31 +82,29 @@ def main():
     if mfile.exists():
         cv_metrics = json.load(open(mfile))
 
-    # Write report.md
+    # Write English report
     REPORTS.mkdir(exist_ok=True)
     with open(REPORTS / 'report.md', 'w', encoding='utf-8') as f:
-        f.write('# Прогноз цен на жильё (Ames) — Отчёт\n\n')
-        f.write('## Цель\nПредсказать `SalePrice` по признакам объекта; бизнес-ценность — оценка стоимости, ценообразование, анализ драйверов цены.\n\n')
-        f.write('## Метод\nПайплайн: импьютация → OHE → гео-фичи (Neighborhood) → модель (RF/XGB). Целевая — `log1p(SalePrice)`. Валидация — 5-fold Stratified K-Fold по квантилям.\n\n')
+        f.write('# Ames Housing — Report\n\n')
+        f.write('## Objective\nPredict `SalePrice` from tabular features; business value: pricing and valuation support.\n\n')
+        f.write('## Method\nSingle sklearn pipeline: imputation → OHE → neighborhood geo-features (no leakage) → model (RF/XGB). ')
+        f.write('Target: log1p(SalePrice). Validation: 5-fold Stratified K-Fold on log-target quantiles.\n\n')
         if cv_metrics:
-            f.write('## Результаты кросс-валидации\n')
-            f.write(f"CV RMSE (лог-цена): **{cv_metrics.get('cv_rmse_mean','?'):.4f}** ± {cv_metrics.get('cv_rmse_std','?'):.4f}\n\n")
-        f.write('## Holdout-метрика\n')
-        f.write(f"RMSE (лог-цена) на валидации: **{holdout_rmse:.4f}**\n\n")
-        f.write('## Важность признаков (Permutation Importance)\n')
-        f.write('Топ-20 признаков по важности на holdout.\n\n')
+            f.write('## Cross-validation\n')
+            f.write(f"CV RMSE (log-target): **{cv_metrics.get('cv_rmse_mean','?'):.4f}** ± {cv_metrics.get('cv_rmse_std','?'):.4f}\n\n")
+        f.write('## Holdout metric\n')
+        f.write(f'RMSE (log-target) on a 20% split: **{holdout_rmse:.4f}**\n\n')
+        f.write('## Feature importance\nTop-20 permutation importance on the holdout split.\n\n')
         f.write('![Permutation Importance](figures/perm_importance.png)\n\n')
-        f.write('## Ошибка по сегментам (Neighborhood)\n')
-        f.write('RMSE по топ-10 районам (по числу объектов).\n\n')
+        f.write('## Segment errors\nRMSE by Neighborhood (top-10 by count).\n\n')
         f.write('![RMSE by Neighborhood](figures/rmse_by_neighborhood.png)\n\n')
-        f.write('## Выводы\n')
-        f.write('- Гео-фичи по району улучшают стабильность и точность.\n')
-        f.write('- Самые сильные драйверы цены: общая жилая площадь, качество отделки, возраст дома/ремонта (проверено Permutation Importance).\n')
-        f.write('- На дорогих объектах модель переобучается слабее при лог-таргете, ошибки равномернее распределены.\n\n')
-        f.write('## Улучшения\n')
-        f.write('- Тюнинг гиперпараметров RF/XGB (RandomizedSearch/Optuna).\n')
-        f.write('- Более точные геопризнаки (квантили по району, расстояние до центра/школ).\n')
-        f.write('- SHAP для локальных объяснений.\n')
+        f.write('## Conclusions\n')
+        f.write('- Neighborhood geo-features improve stability and accuracy.\n')
+        f.write('- Main price drivers: total living area, overall quality, house/remodel age.\n')
+        f.write('- Log-target reduces error skew on expensive properties.\n\n')
+        f.write('## Next steps\n')
+        f.write('- Hyperparameter tuning (RF/XGB), richer geo-features.\n')
+        f.write('- SHAP for local explanations.\n')
 
     print('Report generated at reports/report.md; figures saved to reports/figures/.')
 
