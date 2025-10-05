@@ -7,3 +7,5 @@ matplotlib
 streamlit
 # optional
 xgboost
+
+pytest>=7,<9
