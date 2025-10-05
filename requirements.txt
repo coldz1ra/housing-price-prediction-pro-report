@@ -9,3 +9,5 @@ streamlit
 xgboost
 
 pytest>=7,<9
+
+pytest>=7,<9
